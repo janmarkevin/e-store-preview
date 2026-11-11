@@ -1,15 +1,26 @@
 import {
     createContext,
+    useCallback,
     useContext,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type PropsWithChildren,
 } from 'react';
-import { getProductById, getVariant } from '@/data/selectors';
+import { Link } from 'react-router-dom';
+import { CheckCircle, X } from '@phosphor-icons/react';
+import { getProductById, getVariant, variantDisplayLabel } from '@/data/selectors';
 import type { CartLine } from '@/types';
 
 const STORAGE_KEY = 'kevin-store-preview-cart';
+const TOAST_MS = 4000;
+
+type CartToast = {
+    id: number;
+    title: string;
+    detail: string;
+};
 
 type CartContextValue = {
     lines: CartLine[];
@@ -41,10 +52,52 @@ export function CartProvider({ children }: PropsWithChildren) {
     const [lines, setLines] = useState<CartLine[]>(() =>
         typeof window === 'undefined' ? [] : readStorage(),
     );
+    const [toast, setToast] = useState<CartToast | null>(null);
+    const toastTimer = useRef<number | null>(null);
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
     }, [lines]);
+
+    useEffect(() => {
+        return () => {
+            if (toastTimer.current != null) {
+                window.clearTimeout(toastTimer.current);
+            }
+        };
+    }, []);
+
+    const showAddedToast = useCallback((productId: number, variantId: number, quantity: number) => {
+        const product = getProductById(productId);
+        const variant = product ? getVariant(product, variantId) : null;
+        if (!product || !variant) {
+            return;
+        }
+        const variantLabel = variantDisplayLabel(variant);
+        setToast({
+            id: Date.now(),
+            title: 'Already added to the cart',
+            detail:
+                quantity > 1
+                    ? `${quantity} × ${product.name}${variantLabel !== 'Default' ? ` · ${variantLabel}` : ''}`
+                    : `${product.name}${variantLabel !== 'Default' ? ` · ${variantLabel}` : ''}`,
+        });
+        if (toastTimer.current != null) {
+            window.clearTimeout(toastTimer.current);
+        }
+        toastTimer.current = window.setTimeout(() => {
+            setToast(null);
+            toastTimer.current = null;
+        }, TOAST_MS);
+    }, []);
+
+    const dismissToast = useCallback(() => {
+        if (toastTimer.current != null) {
+            window.clearTimeout(toastTimer.current);
+            toastTimer.current = null;
+        }
+        setToast(null);
+    }, []);
 
     const value = useMemo<CartContextValue>(() => {
         const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -71,6 +124,7 @@ export function CartProvider({ children }: PropsWithChildren) {
                     }
                     return [...prev, { productId, variantId, quantity }];
                 });
+                showAddedToast(productId, variantId, quantity);
             },
             setQuantity(productId, variantId, quantity) {
                 if (quantity < 1) {
@@ -110,9 +164,43 @@ export function CartProvider({ children }: PropsWithChildren) {
                 ]);
             },
         };
-    }, [lines]);
+    }, [lines, showAddedToast]);
 
-    return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+    return (
+        <CartContext.Provider value={value}>
+            {children}
+            {toast ? (
+                <div
+                    className="cart-toast"
+                    role="status"
+                    aria-live="polite"
+                    key={toast.id}
+                >
+                    <CheckCircle
+                        className="cart-toast__icon"
+                        size={22}
+                        weight="fill"
+                        aria-hidden
+                    />
+                    <div className="cart-toast__body">
+                        <p className="cart-toast__title">{toast.title}</p>
+                        <p className="cart-toast__detail">{toast.detail}</p>
+                        <Link to="/cart" className="cart-toast__link" onClick={dismissToast}>
+                            View cart
+                        </Link>
+                    </div>
+                    <button
+                        type="button"
+                        className="cart-toast__close"
+                        aria-label="Dismiss notification"
+                        onClick={dismissToast}
+                    >
+                        <X size={16} aria-hidden />
+                    </button>
+                </div>
+            ) : null}
+        </CartContext.Provider>
+    );
 }
 
 export function useCart() {

@@ -293,6 +293,52 @@
         @apply absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground;
     }
 
+    .cart-toast {
+        @apply fixed right-4 top-4 z-[100] flex max-w-sm items-start gap-3 rounded-sm border border-border bg-surface px-4 py-3 shadow-lg;
+        animation: cart-toast-in 220ms ease-out;
+    }
+
+    .cart-toast__icon {
+        @apply mt-0.5 shrink-0 text-success;
+    }
+
+    .cart-toast__body {
+        @apply min-w-0 flex-1;
+    }
+
+    .cart-toast__title {
+        @apply m-0 text-sm font-semibold text-foreground;
+    }
+
+    .cart-toast__detail {
+        @apply m-0 mt-0.5 truncate text-sm text-muted-foreground;
+    }
+
+    .cart-toast__link {
+        @apply mt-1.5 inline-block text-sm font-semibold text-primary underline-offset-2 hover:underline;
+    }
+
+    .cart-toast__close {
+        @apply -mr-1 -mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition hover:bg-muted hover:text-foreground;
+    }
+
+    @keyframes cart-toast-in {
+        from {
+            opacity: 0;
+            transform: translateX(0.75rem);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .cart-toast {
+            animation: none;
+        }
+    }
+
     .store-header__menu-toggle {
         @apply inline-flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 md:hidden;
     }
