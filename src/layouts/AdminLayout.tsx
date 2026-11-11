@@ -140,7 +140,7 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     return (
         <div className="admin-layout">
             <aside className="admin-sidebar" aria-label="Admin">
-                <div className="admin-sidebar__brand">Kevin Store</div>
+                <div className="admin-sidebar__brand">BlackBird Store</div>
 
                 <nav className="admin-sidebar__nav">
                     {MAIN_NAV.map((item) => {
